@@ -1,0 +1,31 @@
+{
+  "name": "semanticsearch",
+  "version": "1.0.0",
+  "description": "A semantic search engine using vector database.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arunabh28"
+  },
+  "keywords": [
+    "semantic",
+    "search",
+    "vector",
+    "DB",
+    "Search",
+    "Engine."
+  ],
+  "author": "Arunabh Baruah",
+  "license": "ISC",
+  "dependencies": {
+    "@qdrant/js-client-rest": "^1.15.0",
+    "express": "^5.1.0",
+    "fuse.js": "^7.1.0",
+    "langchain": "^0.3.30",
+    "multer": "^2.0.2",
+    "node-fetch": "^3.3.2"
+  }
+}
