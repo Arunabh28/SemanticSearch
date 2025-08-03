@@ -11,31 +11,6 @@ Create a **powerful semantic stack** for managing, searching, and organizing you
 - Embedding each chunk via a local embedding API (e.g., Sentence-Transformers)  
 - Upserting vectors + metadata (title, source, timestamp) into Qdrant  
 
-```js
-// ingest-no-gen.js (excerpt)
-import { QdrantClient } from "@qdrant/js-client-rest";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { LocalEmbeddings } from "./localEmbeddings"; // section 2A
-  
-const qdrant = new QdrantClient({ url: "http://localhost:6333" });
-const embeddings = new LocalEmbeddings();
-
-async function ingest(text, idPrefix) {
-  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 200 });
-  const docs = await splitter.splitDocuments([{ pageContent: text }]);
-  const vectors = await embeddings.embedDocuments(docs.map(d => d.pageContent));
-  
-  await qdrant.upsert({
-    collection_name: "knowledge_repo",
-    points: docs.map((d, i) => ({
-      id: `${idPrefix}-${i}`,
-      vector: vectors[i],
-      payload: { text: d.pageContent, source: idPrefix }
-    }))
-  });
-}
-```
-
 ---
 
 ## 2. Semantic Search  
@@ -44,30 +19,6 @@ async function ingest(text, idPrefix) {
 - Nearest-neighbor search in Qdrant  
 - Return raw chunks, sorted by similarity score  
 
-```js
-// search-no-gen.js (excerpt)
-import express from "express";
-import { QdrantClient } from "@qdrant/js-client-rest";
-import { LocalEmbeddings } from "./localEmbeddings";
-
-const app = express();
-const qdrant = new QdrantClient({ url: "http://localhost:6333" });
-const embeddings = new LocalEmbeddings();
-
-app.get("/search", async (req, res) => {
-  const queryVec = await embeddings.embedQuery(req.query.q || "");
-  const { result } = await qdrant.search({
-    collection_name: "knowledge_repo",
-    vector: queryVec,
-    limit: 10
-  });
-  // Return chunks + scores
-  res.json(result.map(r => ({ text: r.payload.text, score: r.score })));
-});
-
-app.listen(3003, () => console.log("Semantic search on 3003"));
-```
-
 ---
 
 ## 3. Autocomplete & Type-Ahead  
@@ -75,25 +26,6 @@ app.listen(3003, () => console.log("Semantic search on 3003"));
 - Index key phrases or first sentences in an in-memory Fuse.js or Qdrant’s text filters  
 - Real-time suggestions as user types  
 
-```js
-// suggest-no-gen.js (excerpt)
-import Fuse from "fuse.js";
-let fuseIndex;
-
-async function buildFuse() {
-  const docs = (await qdrant.scroll({ collection_name: "knowledge_repo" })).result;
-  fuseIndex = new Fuse(docs.map(p => p.payload.text.slice(0, 100)), {
-    threshold: 0.4
-  });
-}
-
-app.get("/autocomplete", async (req, res) => {
-  if (!fuseIndex) await buildFuse();
-  const suggestions = fuseIndex.search(req.query.q || "", { limit: 5 })
-    .map(r => r.item);
-  res.json(suggestions);
-});
-```
 
 ---
 
